@@ -1,5 +1,12 @@
-const API_URL = "https://your-fastapi-backend.onrender.com";
+// =========================
+// API URL (Change this)
+// =========================
+const API_URL = "https://YOUR_BACKEND_URL.onrender.com";
+const STUDENTS_URL = `${API_URL}/students/`;
 
+// =========================
+// DOM Elements
+// =========================
 const form = document.getElementById("studentForm");
 const studentTable = document.getElementById("studentTable");
 const message = document.getElementById("message");
@@ -15,45 +22,31 @@ const submitBtn = document.getElementById("submitBtn");
 const cancelBtn = document.getElementById("cancelBtn");
 const refreshBtn = document.getElementById("refreshBtn");
 
-fetch(`${API_URL}/students/`)
-  .then(response => {
-    if (!response.ok) {
-      throw new Error(`HTTP error: ${response.status}`);
-    }
-    return response.json();
-  })
-  .then(data => {
-    console.log(data);
-  })
-  .catch(error => {
-    console.error("Fetch failed:", error);
-  });
-
-// Show API errors in a readable format
+// =========================
+// Error Message
+// =========================
 function getErrorMessage(data) {
     if (data.detail) {
         return typeof data.detail === "string"
             ? data.detail
             : JSON.stringify(data.detail);
     }
-
     return "Something went wrong.";
 }
 
-// GET: Fetch all students
+// =========================
+// GET All Students
+// =========================
 async function loadStudents() {
     refreshBtn.disabled = true;
-    studentTable.replaceChildren();
-
-    const loadingRow = document.createElement("tr");
-    const loadingCell = document.createElement("td");
-    loadingCell.colSpan = 6;
-    loadingCell.textContent = "Loading students...";
-    loadingRow.appendChild(loadingCell);
-    studentTable.appendChild(loadingRow);
+    studentTable.innerHTML = `
+        <tr>
+            <td colspan="6">Loading students...</td>
+        </tr>
+    `;
 
     try {
-        const response = await fetch(API_URL);
+        const response = await fetch(STUDENTS_URL);
 
         if (!response.ok) {
             const errorData = await response.json().catch(() => ({}));
@@ -61,99 +54,77 @@ async function loadStudents() {
         }
 
         const students = await response.json();
-        studentTable.replaceChildren();
 
-        if (!Array.isArray(students) || students.length === 0) {
-            const row = document.createElement("tr");
-            const cell = document.createElement("td");
+        studentTable.innerHTML = "";
 
-            cell.colSpan = 6;
-            cell.textContent = "No students found.";
-            row.appendChild(cell);
-            studentTable.appendChild(row);
+        if (students.length === 0) {
+            studentTable.innerHTML = `
+                <tr>
+                    <td colspan="6">No students found.</td>
+                </tr>
+            `;
             return;
         }
 
         students.forEach(student => {
             const row = document.createElement("tr");
 
-            // Match the field names from your SQLAlchemy model/schema
-            const values = [
-                student.student_id,
-                student.name,
-                student.email,
-                student.department,
-                student.age
-            ];
+            row.innerHTML = `
+                <td>${student.student_id}</td>
+                <td>${student.name}</td>
+                <td>${student.email}</td>
+                <td>${student.department}</td>
+                <td>${student.age}</td>
+                <td>
+                    <button class="edit">Edit</button>
+                    <button class="delete">Delete</button>
+                </td>
+            `;
 
-            values.forEach(value => {
-                const cell = document.createElement("td");
-                cell.textContent = value ?? "";
-                row.appendChild(cell);
-            });
+            row.querySelector(".edit")
+                .addEventListener("click", () => editStudent(student));
 
-            // Edit button
-            const actionsCell = document.createElement("td");
+            row.querySelector(".delete")
+                .addEventListener("click", () => deleteStudent(student.student_id));
 
-            const editBtn = document.createElement("button");
-            editBtn.type = "button";
-            editBtn.textContent = "Edit";
-            editBtn.className = "edit";
-            editBtn.addEventListener("click", () => {
-                editStudent(student);
-            });
-
-            // Delete button
-            const deleteBtn = document.createElement("button");
-            deleteBtn.type = "button";
-            deleteBtn.textContent = "Delete";
-            deleteBtn.className = "delete";
-            deleteBtn.addEventListener("click", () => {
-                deleteStudent(student.student_id);
-            });
-
-            actionsCell.append(editBtn, deleteBtn);
-            row.appendChild(actionsCell);
             studentTable.appendChild(row);
         });
 
     } catch (error) {
-        studentTable.replaceChildren();
-
-        const row = document.createElement("tr");
-        const cell = document.createElement("td");
-
-        cell.colSpan = 6;
-        cell.textContent = "Could not load students: " + error.message;
-
-        row.appendChild(cell);
-        studentTable.appendChild(row);
-
+        studentTable.innerHTML = `
+            <tr>
+                <td colspan="6">
+                    Could not load students: ${error.message}
+                </td>
+            </tr>
+        `;
     } finally {
         refreshBtn.disabled = false;
     }
 }
 
-// Fill the form when Edit is clicked
+// =========================
+// Edit Student
+// =========================
 function editStudent(student) {
     studentIdInput.value = student.student_id;
-    nameInput.value = student.name ?? "";
-    emailInput.value = student.email ?? "";
-    departmentInput.value = student.department ?? "";
-    ageInput.value = student.age ?? "";
+    nameInput.value = student.name;
+    emailInput.value = student.email;
+    departmentInput.value = student.department;
+    ageInput.value = student.age;
 
     formTitle.textContent = "Update Student";
     submitBtn.textContent = "Update Student";
     cancelBtn.hidden = false;
 
-    message.textContent =
-        `Editing student ID: ${student.student_id}`;
-
-    form.scrollIntoView({ behavior: "smooth" });
-    nameInput.focus();
+    form.scrollIntoView({
+        behavior: "smooth"
+    });
 }
 
-// Reset the form to Add mode
+// =========================
+// Reset Form
+// =========================
 function resetForm() {
     form.reset();
     studentIdInput.value = "";
@@ -163,14 +134,18 @@ function resetForm() {
     cancelBtn.hidden = true;
 }
 
+// =========================
+// Cancel Button
+// =========================
 cancelBtn.addEventListener("click", () => {
     resetForm();
     message.textContent = "";
 });
 
-// POST: Create a student
-// PUT: Update an existing student
-form.addEventListener("submit", async event => {
+// =========================
+// POST / PUT
+// =========================
+form.addEventListener("submit", async (event) => {
     event.preventDefault();
 
     const id = studentIdInput.value;
@@ -183,18 +158,18 @@ form.addEventListener("submit", async event => {
     };
 
     if (!student.name || !student.email || !student.department) {
-        message.textContent = "Please fill in all fields.";
+        message.textContent = "Please fill all fields.";
         return;
     }
 
-    if (!Number.isInteger(student.age) || student.age < 1) {
-        message.textContent = "Please enter a valid age.";
+    if (student.age <= 0) {
+        message.textContent = "Invalid age.";
         return;
     }
 
     const url = id
-        ? `${API_URL}${encodeURIComponent(id)}`
-        : API_URL;
+        ? `${STUDENTS_URL}${id}`
+        : STUDENTS_URL;
 
     const method = id ? "PUT" : "POST";
 
@@ -205,7 +180,7 @@ form.addEventListener("submit", async event => {
 
     try {
         const response = await fetch(url, {
-            method: method,
+            method,
             headers: {
                 "Content-Type": "application/json"
             },
@@ -222,56 +197,52 @@ form.addEventListener("submit", async event => {
             : "Student created successfully!";
 
         resetForm();
-        await loadStudents();
+        loadStudents();
 
     } catch (error) {
-        message.textContent = "Error: " + error.message;
-
+        message.textContent = error.message;
     } finally {
         submitBtn.disabled = false;
     }
 });
 
-// DELETE: Delete a student by ID
+// =========================
+// DELETE Student
+// =========================
 async function deleteStudent(id) {
-    const confirmed = confirm(
-        `Are you sure you want to delete student ID ${id}?`
-    );
 
-    if (!confirmed) {
+    if (!confirm(`Delete student ${id}?`))
         return;
-    }
-
-    message.textContent = "Deleting student...";
 
     try {
-        const response = await fetch(
-            `${API_URL}${encodeURIComponent(id)}`,
-            {
-                method: "DELETE"
-            }
-        );
+        const response = await fetch(`${STUDENTS_URL}${id}`, {
+            method: "DELETE"
+        });
 
-        // Your controller returns HTTP 204 No Content on success.
         if (!response.ok) {
             const errorData = await response.json().catch(() => ({}));
             throw new Error(getErrorMessage(errorData));
         }
 
-        if (studentIdInput.value === String(id)) {
-            resetForm();
-        }
-
         message.textContent = "Student deleted successfully!";
-        await loadStudents();
+
+        if (studentIdInput.value == id)
+            resetForm();
+
+        loadStudents();
 
     } catch (error) {
-        message.textContent = "Delete failed: " + error.message;
+        message.textContent = error.message;
     }
 }
 
-// Refresh button
+
+// =========================
+// Refresh Button
+// =========================
 refreshBtn.addEventListener("click", loadStudents);
 
-// Load data when the page opens
+// =========================
+// Initial Load
+// =========================
 loadStudents();
