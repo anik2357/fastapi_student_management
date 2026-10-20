@@ -18,12 +18,16 @@ const refreshBtn = document.getElementById("refreshBtn");
 fetch(`${API_URL}/students/`)
   .then(response => {
     if (!response.ok) {
-      throw new Error("Failed to fetch students");
+      throw new Error(`HTTP error: ${response.status}`);
     }
     return response.json();
   })
-  .then(data => console.log(data))
-  .catch(error => console.error(error));
+  .then(data => {
+    console.log(data);
+  })
+  .catch(error => {
+    console.error("Fetch failed:", error);
+  });
 
 // Show API errors in a readable format
 function getErrorMessage(data) {
