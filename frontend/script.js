@@ -1,4 +1,4 @@
-const API_URL = "http://127.0.0.1:8000/students/";
+const API_URL = "https://your-fastapi-backend.onrender.com";
 
 const form = document.getElementById("studentForm");
 const studentTable = document.getElementById("studentTable");
@@ -14,6 +14,16 @@ const formTitle = document.getElementById("formTitle");
 const submitBtn = document.getElementById("submitBtn");
 const cancelBtn = document.getElementById("cancelBtn");
 const refreshBtn = document.getElementById("refreshBtn");
+
+fetch(`${API_URL}/students/`)
+  .then(response => {
+    if (!response.ok) {
+      throw new Error("Failed to fetch students");
+    }
+    return response.json();
+  })
+  .then(data => console.log(data))
+  .catch(error => console.error(error));
 
 // Show API errors in a readable format
 function getErrorMessage(data) {
