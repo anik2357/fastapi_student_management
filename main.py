@@ -15,7 +15,7 @@ app = FastAPI(title="FastAPI MySQL Object-Oriented Clean")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
-         "https://YOUR-FRONTEND.onrender.com"
+         "https://fastapi-student-management-1.onrender.com"
     ],
     allow_credentials=True, 
     allow_methods=["*"],
